@@ -15,7 +15,7 @@
   if (hash.get("hex") === "1") S.hex = true;
 
   const map = L.map("map", {
-    crs: L.CRS.Simple, minZoom: -1, maxZoom: 6, zoomSnap: 1, zoomDelta: 1, wheelPxPerZoomLevel: 100,
+    crs: L.CRS.Simple, minZoom: -1, maxZoom: 7, zoomSnap: 1, zoomDelta: 1, wheelPxPerZoomLevel: 100,
     maxBounds: BOUNDS.pad(0.15), maxBoundsViscosity: 0.8, attributionControl: true, zoomControl: false,
   });
   L.control.zoom({ position: "topright" }).addTo(map);
@@ -24,12 +24,77 @@
   else map.fitBounds(BOUNDS, { padding: [10, 10] });
 
   // ---------------------------------------------------------------- tiles
-  const tiles = {};
+  const VAZIO = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+  const tiles = {}, detalhe = {};
   for (const v of ["dia", "escuro"]) {
     tiles[v] = L.tileLayer(`tiles/${v}/{z}/{x}/{y}.webp`, {
-      minNativeZoom: 0, maxNativeZoom: 3, minZoom: -1, maxZoom: 6, bounds: BOUNDS, noWrap: true,
-      keepBuffer: 4, updateWhenZooming: false,
+      minNativeZoom: 0, maxNativeZoom: D.zmax ?? 3, minZoom: -1, maxZoom: 7, bounds: BOUNDS, noWrap: true,
+      keepBuffer: 4, updateWhenZooming: false, errorTileUrl: VAZIO,
     });
+    // W9: o zoom mais fundo so existe na caixa da campanha; vai por cima do anterior ampliado
+    if (D.caixa) detalhe[v] = L.tileLayer(`tiles/${v}/{z}/{x}/{y}.webp`, {
+      minNativeZoom: D.zmax + 1, maxNativeZoom: D.zmax + 1, minZoom: D.zmax + 1, maxZoom: 7, noWrap: true,
+      bounds: L.latLngBounds(LL(D.caixa[0], D.caixa[2]), LL(D.caixa[1], D.caixa[3])), errorTileUrl: VAZIO,
+    });
+  }
+
+  // ---------------------------------------------------------------- linhas (vetor: nitidas em qualquer zoom)
+  // Geometria colhida do mapa aprovado (web.py, W6). Larguras em px no z2, como no PNG de 4 px/km;
+  // o fator K engrossa de perto e afina de longe. Uma polilinha multipla por estilo (poucas camadas).
+  map.createPane("linhas").style.zIndex = 380;
+  const rLinhas = L.canvas({ pane: "linhas", padding: 0.6 });
+  const K = { "-1": 0.45, 0: 0.55, 1: 0.75, 2: 1, 3: 1.25, 4: 1.55, 5: 1.9, 6: 2.3, 7: 2.7 };
+  const PT = 200 / 72;                                   // pt do matplotlib -> px no z2
+  const camadasLinha = [];                               // {layer, peso, zmin, zmax, epoca}
+  const LLs = (pts) => pts.map(([x, y]) => [y, x]);
+  function linha(pls, est, opts = {}) {
+    if (!pls.length) return;
+    const lay = L.polyline(pls.map(LLs), { renderer: rLinhas, interactive: false, lineCap: "round", lineJoin: "round",
+      smoothFactor: 0.6, ...est });
+    camadasLinha.push({ lay, peso: est.weight, dash: est.dashArray, ...opts });
+  }
+  function estiloLinhas() {
+    const z = map.getZoom(), k = K[Math.max(-1, Math.min(7, Math.round(z)))];
+    for (const c of camadasLinha) {
+      const ver = z >= (c.zmin ?? -9) && z <= (c.zmax ?? 99) && (!c.epoca || c.epoca === S.epoca);
+      if (!ver) { c.lay.remove(); continue; }
+      const st = { weight: Math.max(c.peso * k, 0.35) };
+      if (c.dash) st.dashArray = c.dash.split(",").map((v) => (+v * k).toFixed(1)).join(",");
+      c.lay.setStyle(st);
+      if (!map.hasLayer(c.lay)) c.lay.addTo(map);
+    }
+  }
+  const pts = (it) => (Array.isArray(it) ? it : it.p);
+  async function carregaLinhas(arq) { return (await fetch(arq)).json(); }
+  const LV = await carregaLinhas("linhas.json");
+  // costa e lagos
+  linha(LV.costa.map(pts), { color: "#2F6E9E", weight: 0.6 * PT });
+  linha(LV.lago.map(pts), { color: "#2F6E9E", weight: 0.4 * PT });
+  // rios: largura pela vazao (w = lw em pt do mapa aprovado); de longe so os grandes (W3)
+  const faixas = {};
+  for (const r of LV.rio) { const w = Math.round(r.w * 10) / 10; (faixas[w] ||= []).push(r.p); }
+  for (const [w, pl] of Object.entries(faixas))
+    linha(pl, { color: "#3C86C6", weight: +w * PT }, { zmin: w >= 0.9 ? -9 : w >= 0.55 ? 1 : w >= 0.32 ? 2 : 3 });
+  // fronteiras
+  linha(LV.fronteira.map(pts), { color: "#7B3F8C", weight: 1.3 * PT, opacity: 0.75, dashArray: `${5 * PT},${2.5 * PT}`, lineCap: "butt" });
+  // estradas: contorno branco + traco
+  const est = LV.estrada.map(pts);
+  linha(est, { color: "#fff", weight: 2.0 * PT, opacity: 0.7 });
+  linha(est, { color: "#8E3B2B", weight: 1.1 * PT });
+  // borda da sombra (so no Escuro)
+  for (const s of LV["sombra-antes"]) linha([s.p], { color: "#1b1640", weight: s.w * PT, opacity: 0.85, dashArray: `${6 * PT},${3 * PT}`, lineCap: "butt" }, { epoca: "escuro" });
+  for (const s of LV.sombra) linha([s.p], { color: "#1b1640", weight: s.w * PT, opacity: 0.85 }, { epoca: "escuro" });
+  // trilha e curva de nivel: arquivos a parte, so quando o zoom pede
+  let pedidoTrilha = null, pedidoCurva = null;
+  function sobDemanda() {
+    const z = map.getZoom();
+    if (z >= 2 && !pedidoTrilha) pedidoTrilha = carregaLinhas("trilhas.json").then((d) => {
+      linha(d.trilha, { color: "#7A6A55", weight: 0.32 * PT, opacity: 0.6 }, { zmin: 2 }); estiloLinhas(); });
+    if (z >= 1 && !pedidoCurva) pedidoCurva = carregaLinhas("curvas.json").then((d) => {
+      const fina = d.curva.filter((c) => c.h % 1000).map(pts), grossa = d.curva.filter((c) => !(c.h % 1000)).map(pts);
+      linha(fina, { color: "#6B4A2B", weight: 0.25 * PT, opacity: 0.35 }, { zmin: 2 });
+      linha(grossa, { color: "#6B4A2B", weight: 0.45 * PT, opacity: 0.35 }, { zmin: 1 });
+      estiloLinhas(); });
   }
 
   // ---------------------------------------------------------------- assentamentos
@@ -290,11 +355,12 @@
   function aplica() {
     raiz.dataset.epoca = S.epoca;
     for (const v in tiles) if (v === S.epoca) tiles[v].addTo(map); else tiles[v].remove();
+    for (const v in detalhe) if (v === S.epoca) detalhe[v].addTo(map); else detalhe[v].remove();
     if (S.epoca === "escuro") sois.addTo(map); else sois.remove();
     document.getElementById("sobre-dia").hidden = S.epoca === "escuro";
     document.getElementById("sobre-escuro").hidden = S.epoca !== "escuro";
     if (S.hex) { hex.redraw(); hex.addTo(map); } else hex.remove();
-    atualizaLugares(); desenhaRotulos(); escala.atualiza(); salvaHash();
+    estiloLinhas(); sobDemanda(); atualizaLugares(); desenhaRotulos(); escala.atualiza(); salvaHash();
   }
   function salvaHash() {
     const c = map.getCenter();
@@ -314,7 +380,7 @@
   if (innerWidth < 600) { painel.hidden = true; abre.hidden = false; }
   L.DomEvent.disableClickPropagation(painel); L.DomEvent.disableScrollPropagation(painel);
 
-  map.on("zoomend", () => { atualizaLugares(); escala.atualiza(); });
+  map.on("zoomend", () => { estiloLinhas(); sobDemanda(); atualizaLugares(); escala.atualiza(); });
   map.on("moveend", () => { desenhaRotulos(); salvaHash(); });
   await Promise.all(Object.values(FONTE).map(([f]) => document.fonts.load(f, "Nälsam").catch(() => {})));
   aplica();

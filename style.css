@@ -67,21 +67,14 @@ legend { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; colo
 .leaflet-zoom-anim .leaflet-rotulos-pane { visibility: hidden; }
 .rt { position: absolute; white-space: nowrap; color: #2a2a2a; line-height: 1;
   text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 3px #fff, 0 0 4px rgba(255,255,255,.8); }
-:root[data-epoca="escuro"] .rt { color: #e9e3d4; text-shadow: 0 0 2px #14132a, 0 0 2px #14132a, 0 0 4px #14132a; }
 .rt.reino { color: #7b3f8c; letter-spacing: .25em; text-transform: uppercase; opacity: .9; }
-:root[data-epoca="escuro"] .rt.reino { color: #c9a4e0; }
 .rt.mar, .rt.rio { color: #1d5a8c; font-style: italic; }
-:root[data-epoca="escuro"] .rt.mar, :root[data-epoca="escuro"] .rt.rio { color: #9cc4ea; }
 .rt.serra { color: #5b3b22; font-style: italic; letter-spacing: .2em; text-transform: uppercase; }
-:root[data-epoca="escuro"] .rt.serra { color: #c8ab8e; }
 .rt.vila { color: #3a3a3a; }
-:root[data-epoca="escuro"] .rt.vila { color: #cfc8ba; }
-.rt.vila.morta { color: #8a8a8a; font-style: italic; }
+.rt.vila.morta { color: #5e5e66; font-style: italic; }
 .rt.pico { color: #4a3424; }
 .rt.vulcao { color: #7a1408; }
-:root[data-epoca="escuro"] .rt.vulcao { color: #ff8a6a; }
 .rt.sol { color: #7a3d00; }
-:root[data-epoca="escuro"] .rt.sol { color: #ffc233; }
 
 /* icones */
 .ico-vulcao { width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent;
