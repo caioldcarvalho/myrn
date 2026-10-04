@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Myrn — The Coast of Nälsam</title>
+<meta name="description" content="Interactive map of the Coast of Nälsam, in the year the sun faded away.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%2214%22 fill=%22%231c1b2c%22/%3E%3Cpath d=%22M6 23 13 11l4 6 3-4 6 10z%22 fill=%22%23e9d8a6%22/%3E%3Ccircle cx=%2222%22 cy=%229%22 r=%223%22 fill=%22%23ffc233%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,700;1,400&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="map"></div>
+
+<aside id="painel">
+  <header>
+    <h1>Myrn</h1>
+    <p class="sub">The Coast of Nälsam</p>
+    <button id="fecha" aria-label="Hide panel">×</button>
+  </header>
+
+  <div class="busca">
+    <input id="busca" type="search" placeholder="Find a place…" autocomplete="off" spellcheck="false">
+    <ul id="resultados" hidden></ul>
+  </div>
+
+  <fieldset class="seg" id="epoca">
+    <legend>When</legend>
+    <label><input type="radio" name="epoca" value="dia" checked><span>3600 · the Day</span></label>
+    <label><input type="radio" name="epoca" value="escuro"><span>3607 · the Dark</span></label>
+  </fieldset>
+
+  <fieldset class="seg" id="densidade">
+    <legend>Names</legend>
+    <label><input type="radio" name="dens" value="1"><span>Few</span></label>
+    <label><input type="radio" name="dens" value="0" checked><span>Some</span></label>
+    <label><input type="radio" name="dens" value="-1"><span>Many</span></label>
+  </fieldset>
+
+  <fieldset class="chk">
+    <legend>Layers</legend>
+    <label><input type="checkbox" id="c-nomes" checked> Labels</label>
+    <label><input type="checkbox" id="c-lugares" checked> Settlements</label>
+    <label><input type="checkbox" id="c-hex"> Hex grid (6 mi)</label>
+  </fieldset>
+
+  <details class="sobre">
+    <summary>About this map</summary>
+    <p id="sobre-dia">At the end of the year 3600 a dead mountain woke. The Jylefjön range had not
+      known fire for three hundred million years; the ash that rose from it did not settle.</p>
+    <p id="sobre-escuro" hidden>Seven years later the coast lives in an endless dusk. Where a
+      <b>Tirsång</b> burns, a fire-sun built at ruinous cost, there is still harvest. Everywhere
+      else the villages empty out.</p>
+    <p class="nota">1 km per cell, generated from simulated plate tectonics, climate, and three
+      thousand years of history. Place names are in the region's constructed languages; click a
+      place to see what its name means.</p>
+  </details>
+</aside>
+<button id="abre" aria-label="Show panel" hidden>☰</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

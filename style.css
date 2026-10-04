@@ -1,0 +1,114 @@
+:root {
+  --bg: #d9d4c8;
+  --panel: rgba(250, 247, 240, .94);
+  --ink: #2b2620;
+  --muted: #6d6458;
+  --line: #d4ccbd;
+  --accent: #7b3f8c;
+  --chip: #efe9dc;
+}
+:root[data-epoca="escuro"] {
+  --bg: #23223a;
+  --panel: rgba(28, 27, 44, .93);
+  --ink: #ece6d8;
+  --muted: #a9a2b8;
+  --line: #3d3b58;
+  --accent: #ffc233;
+  --chip: #2f2d4a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+  font: 14px/1.45 "Alegreya Sans", system-ui, sans-serif; }
+#map { position: fixed; inset: 0; background: var(--bg); }
+.leaflet-container { background: var(--bg); font: inherit; }
+
+/* painel */
+#painel { position: fixed; top: 12px; left: 12px; z-index: 1000; width: 270px; max-height: calc(100% - 24px);
+  overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px 14px 10px; box-shadow: 0 4px 18px rgba(0,0,0,.18); backdrop-filter: blur(6px); }
+#painel header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+#painel h1 { font: 700 26px/1 Alegreya, serif; margin: 0; letter-spacing: .02em; }
+#fecha { margin-left: auto; border: 0; background: none; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer; padding: 0 2px; }
+#painel .sub { margin: 0; color: var(--muted); font: italic 15px Alegreya, serif; }
+fieldset { border: 0; padding: 0; margin: 0 0 10px; }
+legend { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 4px; padding: 0; }
+.seg { display: flex; flex-wrap: wrap; gap: 0; }
+.seg legend { width: 100%; }
+.seg label { flex: 1; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg span { display: block; text-align: center; padding: 5px 4px; background: var(--chip); border: 1px solid var(--line);
+  cursor: pointer; font-size: 13px; white-space: nowrap; }
+.seg label:first-of-type span { border-radius: 6px 0 0 6px; }
+.seg label:last-of-type span { border-radius: 0 6px 6px 0; }
+.seg label + label span { border-left: 0; }
+.seg input:checked + span { background: var(--accent); color: #fff; border-color: var(--accent); }
+:root[data-epoca="escuro"] .seg input:checked + span { color: #241a00; }
+.seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 1px; }
+.chk label { display: block; padding: 2px 0; cursor: pointer; }
+.chk input { accent-color: var(--accent); }
+
+.busca { position: relative; margin-bottom: 12px; }
+#busca { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--chip);
+  color: var(--ink); font: inherit; }
+#resultados { position: absolute; left: 0; right: 0; top: 100%; margin: 2px 0 0; padding: 4px 0; list-style: none;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; max-height: 260px; overflow: auto; z-index: 2; }
+#resultados li { padding: 4px 9px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+#resultados li small { color: var(--muted); }
+#resultados li.ativo, #resultados li:hover { background: var(--chip); }
+
+.sobre summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.sobre p { margin: 6px 0; font: 14px/1.45 Alegreya, serif; }
+.sobre .nota { color: var(--muted); font-size: 12.5px; }
+#abre { position: fixed; top: 12px; left: 12px; z-index: 1000; width: 40px; height: 40px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 20px; cursor: pointer; }
+
+/* rotulos */
+.leaflet-rotulos-pane { pointer-events: none; }
+.leaflet-zoom-anim .leaflet-rotulos-pane { visibility: hidden; }
+.rt { position: absolute; white-space: nowrap; color: #2a2a2a; line-height: 1;
+  text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 3px #fff, 0 0 4px rgba(255,255,255,.8); }
+:root[data-epoca="escuro"] .rt { color: #e9e3d4; text-shadow: 0 0 2px #14132a, 0 0 2px #14132a, 0 0 4px #14132a; }
+.rt.reino { color: #7b3f8c; letter-spacing: .25em; text-transform: uppercase; opacity: .9; }
+:root[data-epoca="escuro"] .rt.reino { color: #c9a4e0; }
+.rt.mar, .rt.rio { color: #1d5a8c; font-style: italic; }
+:root[data-epoca="escuro"] .rt.mar, :root[data-epoca="escuro"] .rt.rio { color: #9cc4ea; }
+.rt.serra { color: #5b3b22; font-style: italic; letter-spacing: .2em; text-transform: uppercase; }
+:root[data-epoca="escuro"] .rt.serra { color: #c8ab8e; }
+.rt.vila { color: #3a3a3a; }
+:root[data-epoca="escuro"] .rt.vila { color: #cfc8ba; }
+.rt.vila.morta { color: #8a8a8a; font-style: italic; }
+.rt.pico { color: #4a3424; }
+.rt.vulcao { color: #7a1408; }
+:root[data-epoca="escuro"] .rt.vulcao { color: #ff8a6a; }
+.rt.sol { color: #7a3d00; }
+:root[data-epoca="escuro"] .rt.sol { color: #ffc233; }
+
+/* icones */
+.ico-vulcao { width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent;
+  border-bottom: 15px solid #b5281c; filter: drop-shadow(0 0 1px #3a0a05); }
+.ico-sol { width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle, #fff6c8 0 25%, #ffc233 45%, #ff8a1a 75%);
+  box-shadow: 0 0 6px 2px rgba(255,170,40,.9), 0 0 18px 6px rgba(255,140,30,.45); border: 1px solid #b35c00; cursor: pointer; }
+
+/* popup */
+.leaflet-popup-content-wrapper { border-radius: 8px; background: var(--panel); color: var(--ink); }
+.leaflet-popup-tip { background: var(--panel); }
+.leaflet-popup-content { margin: 10px 14px; font: 14px/1.4 "Alegreya Sans", sans-serif; min-width: 170px; }
+.pp h3 { margin: 0 0 2px; font: 700 18px Alegreya, serif; }
+.pp .sig { margin: 0 0 6px; font: italic 14px Alegreya, serif; color: var(--muted); }
+.pp dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; font-size: 13px; }
+.pp dt { color: var(--muted); }
+.pp dd { margin: 0; }
+
+/* escala */
+.escala { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px 3px;
+  font-size: 11px; color: var(--ink); }
+.escala .barra { height: 5px; border: 1px solid var(--ink); border-top: 0; margin: 1px 0 3px; }
+.leaflet-control-attribution { background: var(--panel) !important; color: var(--muted) !important; }
+.leaflet-control-attribution a { color: var(--muted) !important; }
+.leaflet-bar a { background: var(--panel); color: var(--ink); border-color: var(--line); }
+
+@media (max-width: 600px) {
+  #painel { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; max-height: 55%; }
+  #abre { top: auto; bottom: 12px; left: 12px; }
+  .leaflet-top.leaflet-right { top: 0; }
+}
