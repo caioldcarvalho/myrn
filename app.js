@@ -262,6 +262,7 @@
     }
     for (const k of candidatos()) {
       if (z < k.z || (k.zmax !== undefined && z > k.zmax)) continue;
+      const cresce = k.r ? Math.max(0, z - 2) * 0.6 : 0;   // o simbolo cresce de perto (estilo())
       const fcls = k.f || k.c.split(" ")[0];
       const [w, h] = mede(k.t, fcls);
       let px, py, ang = 0;
@@ -282,7 +283,7 @@
       } else {
         const p = map.latLngToContainerPoint(LL(k.x, k.y));
         if (p.x < -200 || p.y < -50 || p.x > tam.x + 200 || p.y > tam.y + 50) continue;
-        const opcoes = k.centro ? [[0, 0]] : k.lado || LADOS.map(([a, b]) => [a * (k.r + 3 + (a ? w / 2 : 0)) , b * (k.r + 2 + h / 2)]);
+        const opcoes = k.centro ? [[0, 0]] : k.lado || LADOS.map(([a, b]) => [a * (k.r + cresce + 3 + (a ? w / 2 : 0)), b * (k.r + cresce + 2 + h / 2)]);
         let ok = null;
         for (const [ox, oy] of opcoes) {
           const cx = p.x + ox, cy = p.y + oy;
