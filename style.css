@@ -71,6 +71,9 @@ legend { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; colo
 .rt.mar, .rt.rio { color: #1d5a8c; font-style: italic; }
 .rt.serra { color: #5b3b22; font-style: italic; letter-spacing: .2em; text-transform: uppercase; }
 .rt.vila { color: #3a3a3a; }
+.rt.oceano { color: #2b6a9c; font-style: italic; letter-spacing: .3em; opacity: .85; }
+.rt.continente { color: #6b4f33; letter-spacing: .35em; text-transform: uppercase; opacity: .8; }
+.rt.regiao { color: #5c4a3a; letter-spacing: .3em; text-transform: uppercase; opacity: .85; }
 .rt.vila.morta { color: #5e5e66; font-style: italic; }
 .rt.pico { color: #4a3424; }
 .rt.vulcao { color: #7a1408; }
