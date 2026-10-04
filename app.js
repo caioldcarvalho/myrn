@@ -31,11 +31,12 @@
       minNativeZoom: 0, maxNativeZoom: D.zmax ?? 3, minZoom: -1, maxZoom: 7, bounds: BOUNDS, noWrap: true,
       keepBuffer: 4, updateWhenZooming: false, errorTileUrl: VAZIO,
     });
-    // W9: o zoom mais fundo so existe na caixa da campanha; vai por cima do anterior ampliado
-    if (D.caixa) detalhe[v] = L.tileLayer(`tiles/${v}/{z}/{x}/{y}.webp`, {
-      minNativeZoom: D.zmax + 1, maxNativeZoom: D.zmax + 1, minZoom: D.zmax + 1, maxZoom: 7, noWrap: true,
-      bounds: L.latLngBounds(LL(D.caixa[0], D.caixa[2]), LL(D.caixa[1], D.caixa[3])), errorTileUrl: VAZIO,
-    });
+    // W9: os zooms mais fundos so existem em caixas (z5 na campanha, z6 do vulcao a Dejgomesvav);
+    // cada um vai por cima do anterior ampliado
+    detalhe[v] = (D.fundos || []).map((f) => L.tileLayer(`tiles/${v}/{z}/{x}/{y}.webp`, {
+      minNativeZoom: f.z, maxNativeZoom: f.z, minZoom: f.z, maxZoom: 7, noWrap: true, zIndex: 1 + f.z,
+      bounds: L.latLngBounds(LL(f.caixa[0], f.caixa[2]), LL(f.caixa[1], f.caixa[3])), errorTileUrl: VAZIO,
+    }));
   }
 
   // ---------------------------------------------------------------- linhas (vetor: nitidas em qualquer zoom)
@@ -355,7 +356,7 @@
   function aplica() {
     raiz.dataset.epoca = S.epoca;
     for (const v in tiles) if (v === S.epoca) tiles[v].addTo(map); else tiles[v].remove();
-    for (const v in detalhe) if (v === S.epoca) detalhe[v].addTo(map); else detalhe[v].remove();
+    for (const v in detalhe) for (const t of detalhe[v]) if (v === S.epoca) t.addTo(map); else t.remove();
     if (S.epoca === "escuro") sois.addTo(map); else sois.remove();
     document.getElementById("sobre-dia").hidden = S.epoca === "escuro";
     document.getElementById("sobre-escuro").hidden = S.epoca !== "escuro";
