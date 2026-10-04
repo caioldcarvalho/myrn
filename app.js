@@ -126,22 +126,9 @@
     if (l.e === "abandonada") return { radius: Math.max(r, 1.6), color: "#8f8aa8", weight: 0.8, fill: false, opacity: .8 };
     return { radius: Math.max(r, 1.2), stroke: false, fillColor: c || "#cfc8ba", fillOpacity: .95 };
   }
-  function popup(l) {
-    const esc = S.epoca === "escuro";
-    const nome = l.n || (l.t === "acampamento" ? "Unnamed camp" : "Unnamed hamlet");
-    let tipo = TIPO[l.t];
-    if (l.t === "cidade") tipo = l.cap ? "Capital" : "City (former capital)";
-    if (l.porto) tipo += ", port";
-    const linhas = [["Type", tipo]];
-    if (l.r) linhas.push(["Realm", l.r]);
-    linhas.push(["People", esc ? `${fmt(l.p7)} <small>(${fmt(l.p)} before the Day)</small>` : fmt(l.p)]);
-    if (esc || l.e === "destruida") linhas.push(["State", ESTADO[l.e] || l.e]);
-    return `<div class="pp"><h3>${nome}</h3>${l.en ? `<p class="sig">“${l.en}”</p>` : ""}<dl>${
-      linhas.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join("")}</dl></div>`;
-  }
   const marcas = D.lugares.map((l) => {
     const m = L.circleMarker(LL(l.x, l.y), { renderer: canvas, ...estilo(l, 0) });
-    m.bindPopup(() => popup(l), { autoPanPadding: [40, 40] });
+    m.on("click", (e) => { L.DomEvent.stop(e); abreFicha(D.lugares.indexOf(l)); });
     m._l = l;
     return m;
   });
@@ -229,13 +216,15 @@
     C.push({ c: "vulcao", t: D.vulcao.n.toUpperCase(), x: D.vulcao.x, y: D.vulcao.y, z: -1, p: 1000, r: 10, lado: [[12, 4]] });
     for (const r of D.reinos) C.push({ c: "reino", t: r.n, x: r.x, y: r.y, z: -1, zmax: 3.5, p: 900 + r.a / 1e4, r: 0, centro: 1 });
     for (const f of D.feicoes) C.push({ c: f.t === "mar" ? "mar" : "serra", t: f.n, x: f.x, y: f.y, z: f.t === "mar" ? -1 : 0, zmax: 5, p: 800, r: 0, centro: 1 });
-    for (const l of D.lugares) {
+    for (const [i, l] of D.lugares.entries()) {
       if (!l.n) continue;
+      const n0 = C.length;
       const morta = esc && l.e === "abandonada";
       if (l.t === "cidade") C.push({ c: l.cap ? "cap" : "cid", t: l.n + (l.e === "destruida" ? " (ruin)" : ""), x: l.x, y: l.y, z: l.cap ? -1 : 0, p: (l.cap ? 700 : 600) + l.p / 1e4, r: 7 });
       else if (l.t === "mercado") C.push({ c: "mer", t: l.n, x: l.x, y: l.y, z: 1 + d, p: 500 + l.p / 1e4, r: 5 });
       else if (l.t === "vila") C.push({ c: "vila" + (morta ? " morta" : ""), f: "vila", t: l.n, x: l.x, y: l.y, z: (l.p >= 250 ? 2 : l.p >= 110 ? 3 : 4) + d, p: 100 + (esc ? l.p7 : l.p) / 100 - (morta ? 50 : 0), r: 3 });
       else if (l.t === "acampamento") C.push({ c: "vila", t: l.n, x: l.x, y: l.y, z: 4 + d, p: 50 + l.p / 100, r: 3 });
+      if (C.length > n0) C[C.length - 1].i = i;
     }
     for (const r of D.rios) C.push({ c: "rio", t: r.n, rio: r, z: r.km > 150 ? 1 : 2 + Math.max(d, 0), p: 400 + r.km / 100 });
     for (const k of D.picos) C.push({ c: "pico", t: `▲ ${fmt(k.h)} m`, x: k.x, y: k.y, z: 3 + d, p: 40 + k.h / 1e4, r: 0, centro: 1 });
@@ -301,10 +290,72 @@
       const lp = map.containerPointToLayerPoint([px, py]);
       el.style.transform = `translate(${lp.x}px, ${lp.y}px) translate(-50%, -50%)` + (ang ? ` rotate(${ang}rad)` : "");
       el.style.left = "0"; el.style.top = "0";
+      if (k.i !== undefined) { el.dataset.i = k.i; el.classList.add("clica"); }
       frag.appendChild(el);
     }
     painelRot.appendChild(frag);
   }
+
+
+  // ---------------------------------------------------------------- ficha do lugar (W11, a la Azgaar)
+  const fichaEl = document.getElementById("ficha");
+  let INFO = null, fichaAberta = -1;
+  map.createPane("selecao").style.zIndex = 460;
+  const anel = L.circleMarker([0, 0], { radius: 13, color: "#c0392b", weight: 2.5, fill: false, interactive: false, pane: "selecao" });
+  painelRot.addEventListener("click", (e) => {
+    const el = e.target.closest(".clica"); if (!el) return;
+    e.stopPropagation(); abreFicha(+el.dataset.i);
+  });
+  L.DomEvent.disableClickPropagation(fichaEl); L.DomEvent.disableScrollPropagation(fichaEl);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  function semente(s) { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.codePointAt(0), 16777619); return h >>> 0; }
+  function planta(l, f) {
+    // watabou: Medieval Fantasy City Generator pra cidade e mercado, Village Generator pra vila e acampamento
+    const seed = semente(l.n + l.x + l.y) % 2147483647;
+    if (l.t === "vila" || l.t === "acampamento") return `https://watabou.github.io/village-generator/?seed=${seed}`;
+    const p = new URLSearchParams({ size: Math.max(6, Math.min(40, Math.round(l.p / 250))), seed, name: l.n,
+      citadel: l.cap ? 1 : 0, walls: l.t === "cidade" ? 1 : 0, plaza: 1, temple: 1, river: f.rio ? 1 : 0,
+      coast: f.costa || l.porto ? 1 : 0, greens: 0, shantytown: l.t === "cidade" ? 1 : 0, random: 0 });
+    return `https://watabou.github.io/city-generator/?${p}`;
+  }
+  async function abreFicha(i) {
+    const l = D.lugares[i]; if (!l) return;
+    if (!INFO) INFO = await (await fetch("info.json")).json();
+    const f = INFO.lugares[i] || {}, escuro = S.epoca === "escuro";
+    let tipo = TIPO[l.t];
+    if (l.t === "cidade") tipo = l.cap ? "Capital" : (l.e === "destruida" ? "City, destroyed on the Day" : "City");
+    if (l.porto) tipo += " · port";
+    const nome = l.n || (l.t === "acampamento" ? "Unnamed camp" : "Unnamed hamlet");
+    const pecas = (f.pc || []).map(([, en]) => `<i>${esc(en)}</i>`).join(" + ");
+    const linhas = [["Type", tipo]];
+    if (l.r) linhas.push(["Realm", esc(l.r)]);
+    linhas.push(["People", escuro ? `${fmt(l.p7)} in 3607 <small>(${fmt(l.p)} before the Day)</small>` : `${fmt(l.p)}`]);
+    if (escuro) linhas.push(["State", ESTADO[l.e] || l.e]);
+    if (f.fund) linhas.push(["Founded", `year ${f.fund}`]);
+    linhas.push(["Elevation", `${fmt(f.alt)} m`]);
+    if (f.bio) linhas.push(["Land", f.bio + (f.rio ? ", on a river" : "") + (f.costa ? ", by the sea" : "")]);
+    if (f.tq !== undefined) linhas.push(["Climate", `${f.tq} °C in high summer, ${f.tf} °C in deep winter; ${fmt(f.pr)} mm of rain a year`]);
+    const ev = (f.ev || []).map((n) => INFO.eventos[n]).map(([ano, t]) => `<li><b>${ano}</b> ${esc(t)}</li>`).join("");
+    fichaEl.innerHTML = `<button class="fecha" aria-label="Close">×</button>
+      <h2>${esc(nome)}</h2>
+      ${f.ipa ? `<p class="ipa">/${esc(f.ipa)}/</p>` : ""}
+      ${l.en ? `<p class="sig">“${esc(l.en)}”${pecas ? ` <span>— ${pecas}</span>` : ""}</p>` : ""}
+      ${f.lg ? `<p class="lg">${esc(f.lg)}${f.proto ? `, from Proto <i>*${esc(f.proto)}</i>` : ""}</p>` : ""}
+      <dl>${linhas.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join("")}</dl>
+      ${ev ? `<h3>Chronicle</h3><ul class="cron">${ev}</ul>` : ""}
+      ${l.n ? `<a class="planta" href="${planta(l, f)}" target="_blank" rel="noopener">${l.t === "vila" || l.t === "acampamento" ? "Village layout" : "Town plan"} ↗</a>
+      <p class="nota">Layout drawn by watabou's generator, seeded by this place.</p>` : ""}`;
+    fichaEl.hidden = false; fichaAberta = i;
+    anel.setLatLng(LL(l.x, l.y)).addTo(map);
+    // o lugar nao pode ficar debaixo da ficha: no celular sobe, no desktop vai pra esquerda
+    const p = map.latLngToContainerPoint(LL(l.x, l.y)), tam = map.getSize();
+    if (innerWidth < 600) { if (p.y > tam.y * 0.32) map.panBy([0, p.y - tam.y * 0.22]); }
+    else if (p.x > tam.x - 420) map.panBy([p.x - (tam.x - 420) / 2, 0]);
+    fichaEl.querySelector(".fecha").onclick = fechaFicha;
+    salvaHash();
+  }
+  function fechaFicha() { fichaEl.hidden = true; fichaAberta = -1; anel.remove(); salvaHash(); }
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && fichaAberta >= 0) fechaFicha(); });
 
   // ---------------------------------------------------------------- escala km / milhas
   const Escala = L.Control.extend({
@@ -337,7 +388,7 @@
   function vai(a) {
     lista.hidden = true; caixa.value = a.n; caixa.blur();
     map.flyTo(LL(a.x, a.y), Math.max(map.getZoom(), a.z), { duration: 1.2 });
-    if (a.l) map.once("moveend", () => { const m = marcas.find((m) => m._l === a.l); if (m) { if (!grupoLugares.hasLayer(m)) grupoLugares.addLayer(m); m.openPopup(); } });
+    if (a.l) abreFicha(D.lugares.indexOf(a.l));
   }
   caixa.addEventListener("input", () => {
     const q = norm(caixa.value.trim()); sel = 0;
@@ -370,6 +421,7 @@
     if (S.epoca !== "dia") h.set("t", S.epoca);
     if (S.dens) h.set("d", S.dens);
     if (S.hex) h.set("hex", "1");
+    if (typeof fichaAberta !== "undefined" && fichaAberta >= 0) h.set("p", fichaAberta);
     history.replaceState(null, "", "#" + h);
   }
   document.querySelectorAll("input[name=epoca]").forEach((i) => { i.checked = i.value === S.epoca; i.onchange = () => { S.epoca = i.value; aplica(); }; });
@@ -386,4 +438,5 @@
   map.on("moveend", () => { desenhaRotulos(); salvaHash(); });
   await Promise.all(Object.values(FONTE).map(([f]) => document.fonts.load(f, "Nälsam").catch(() => {})));
   aplica();
+  if (hash.has("p")) abreFicha(+hash.get("p"));
 })();

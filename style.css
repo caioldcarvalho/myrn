@@ -105,3 +105,30 @@ legend { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; colo
   #abre { top: auto; bottom: 12px; left: 12px; }
   .leaflet-top.leaflet-right { top: 0; }
 }
+
+/* ficha do lugar */
+.rt.clica { pointer-events: auto; cursor: pointer; }
+.rt.clica:hover { text-decoration: underline; text-underline-offset: 2px; }
+#ficha { position: fixed; top: 12px; right: 62px; z-index: 1000; width: 330px; max-height: calc(100% - 24px); overflow: auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px 14px;
+  box-shadow: 0 4px 18px rgba(0,0,0,.2); backdrop-filter: blur(6px); }
+#ficha .fecha { position: absolute; top: 8px; right: 10px; border: 0; background: none; color: var(--muted); font-size: 22px; cursor: pointer; }
+#ficha h2 { margin: 0 24px 0 0; font: 700 26px/1.1 Alegreya, serif; }
+#ficha .ipa { margin: 2px 0 0; color: var(--muted); font-size: 13px; letter-spacing: .02em; }
+#ficha .sig { margin: 8px 0 0; font: italic 17px Alegreya, serif; }
+#ficha .sig span { font-style: normal; font-size: 14px; color: var(--muted); }
+#ficha .lg { margin: 2px 0 10px; color: var(--muted); font-size: 13px; }
+#ficha dl { margin: 10px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13.5px; }
+#ficha dt { color: var(--muted); }
+#ficha dd { margin: 0; }
+#ficha h3 { margin: 14px 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; }
+#ficha .cron { margin: 0; padding: 0; list-style: none; font: 14px/1.4 Alegreya, serif; }
+#ficha .cron li { padding: 3px 0; border-top: 1px solid var(--line); }
+#ficha .cron b { font-family: "Alegreya Sans", sans-serif; font-size: 12px; color: var(--muted); margin-right: 4px; }
+#ficha .planta { display: inline-block; margin-top: 14px; padding: 7px 12px; border-radius: 6px; background: var(--accent);
+  color: #fff; text-decoration: none; font-size: 13.5px; }
+:root[data-epoca="escuro"] #ficha .planta { color: #241a00; }
+#ficha .nota { margin: 6px 0 0; font-size: 11.5px; color: var(--muted); }
+@media (max-width: 600px) {
+  #ficha { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; max-height: 60%; }
+}
