@@ -135,3 +135,9 @@ legend { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; colo
 @media (max-width: 600px) {
   #ficha { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; max-height: 60%; }
 }
+
+/* plantas de cidade (p35f) */
+.planta { transition: opacity .7s ease; }
+.aviso-planta { font: italic 13px Georgia, serif; color: #3a2a14; background: rgba(250, 243, 225, .92);
+  border: 1px solid #a08050; box-shadow: none; padding: 2px 8px; }
+.aviso-planta::before { display: none; }

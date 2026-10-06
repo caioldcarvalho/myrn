@@ -470,10 +470,39 @@
   if (innerWidth < 600) { painel.hidden = true; abre.hidden = false; }
   L.DomEvent.disableClickPropagation(painel); L.DomEvent.disableScrollPropagation(painel);
 
+  // ---------------------------------------------------------------- plantas de cidade (p35f)
+  // Passado o zoom maximo do mapa (z15), perto de uma cidade que tem planta, o teto sobe e o
+  // pergaminho entra por cima, em fade, durante a propria animacao de zoom. Afastou: volta.
+  const Z_BASE = 15, Z_PLANTA = 17;
+  map.createPane("planta").style.zIndex = 590;
+  const PLANTAS = (D.plantas || []).map((p) => ({ ...p, b: L.latLngBounds([inv(p.x0, p.y0), inv(p.x1, p.y1)]) }));
+  const aqui = () => PLANTAS.find((p) => p.b.pad(0.1).contains(map.getCenter()));
+  function plantas(z = map.getZoom()) {
+    const pl = aqui();
+    if (map.getMaxZoom() !== (pl ? Z_PLANTA : Z_BASE)) map.setMaxZoom(pl ? Z_PLANTA : Z_BASE);
+    for (const p of PLANTAS) {
+      if (!p.lay && z >= 12 && map.getBounds().pad(1).intersects(p.b)) {
+        p.lay = L.imageOverlay(p.img, p.b, { pane: "planta", opacity: 0, className: "planta", interactive: false }).addTo(map);
+        p.aviso = L.rectangle(p.b, { pane: "planta", color: "#5a3a1a", weight: 1.2, dashArray: "5 5", fill: false, interactive: false })
+          .bindTooltip(`${p.n} · zoom in for the city plan`, { permanent: true, direction: "top", className: "aviso-planta", offset: [0, -4] });
+      }
+      if (!p.lay) continue;
+      const dentro = z > Z_BASE && p === pl;
+      p.lay.setOpacity(dentro ? 1 : 0);
+      const avisa = !dentro && z >= 13 && z <= Z_BASE && p === pl;
+      if (avisa) p.aviso.addTo(map); else p.aviso.remove();
+    }
+    raiz.dataset.planta = PLANTAS.some((p) => p.lay && z > Z_BASE && p === pl) ? "1" : "";
+  }
+  map.on("zoomanim", (e) => plantas(e.zoom));
+  map.on("moveend", () => plantas());
+
   map.on("zoomend", () => { estiloLinhas(); sobDemanda(); atualizaLugares(); });
   map.on("moveend", () => { sobDemanda(); desenhaRotulos(); salvaHash(); });
   await Promise.all(Object.values(FONTE).map(([f]) => document.fonts.load(f, "Nälsam").catch(() => {})));
   aplica();
+  plantas();
+  if (hash.has("z") && +hash.get("z") > Z_BASE && aqui()) map.setZoom(+hash.get("z"), { animate: false });
   const ph = hash.get("p");
   if (ph) ph.startsWith("m") ? abreFichaMundo(+ph.slice(1)) : abreFicha(+ph);
 })();
